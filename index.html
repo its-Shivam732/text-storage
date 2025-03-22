@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Storage - Concatenation Mode</title>
+    <title>JSON Company Data Storage</title>
     <!-- Firebase SDK -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f7f9fc;
@@ -27,6 +27,12 @@
             color: #2c3e50;
             margin-bottom: 20px;
         }
+        h2 {
+            color: #3498db;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
         .description {
             margin-bottom: 20px;
             text-align: center;
@@ -37,17 +43,19 @@
             padding: 15px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 14px;
+            font-family: monospace;
             margin-bottom: 20px;
             resize: vertical;
             box-sizing: border-box;
         }
-        #textArea {
-            height: 150px;
+        #jsonInput {
+            height: 200px;
+            background-color: #f8f8f8;
         }
-        #allStoredText {
+        #allStoredJson {
             height: 300px;
-            background-color: #f9f9f9;
+            background-color: #f0f8ff;
         }
         .button-group {
             display: flex;
@@ -87,9 +95,15 @@
         .clear-btn:hover {
             background-color: #c0392b;
         }
+        .format-btn {
+            background-color: #f39c12;
+        }
+        .format-btn:hover {
+            background-color: #d35400;
+        }
         .status {
             text-align: center;
-            margin-top: 20px;
+            margin: 20px 0;
             padding: 10px;
             border-radius: 5px;
             display: none;
@@ -102,22 +116,28 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
         .footer {
             margin-top: 30px;
             text-align: center;
             font-size: 14px;
             color: #7f8c8d;
         }
-        .section-header {
-            margin-top: 30px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            color: #2c3e50;
+        .json-help {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
         }
-        .separator {
-            margin: 30px 0;
-            border-top: 1px dashed #ddd;
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
         }
         @media (max-width: 600px) {
             .button-group {
@@ -128,53 +148,56 @@
 </head>
 <body>
     <div class="container">
-        <h1>Text Storage</h1>
-        <p class="description">Add text to be stored. New text will be concatenated with previously stored text.</p>
+        <h1>JSON Company Data Storage</h1>
+        <p class="description">Store company employee data in JSON format</p>
         
-        <!-- Add New Text Section -->
-        <div>
-            <textarea id="textArea" placeholder="Type or paste new text here..."></textarea>
-            <div class="button-group">
-                <button class="add-btn" id="addTextBtn">Add Text</button>
-            </div>
+        <!-- JSON Input Section -->
+        <h2>Add New Company Data</h2>
+        <div class="json-help">
+            <p>Enter your company data in this format:</p>
+            <code>{"CompanyName": [{"first_name": "John", "last_name": "Doe"}, ...]}</code>
         </div>
         
-        <div class="separator"></div>
-        
-        <!-- All Stored Text Section -->
-        <h3 class="section-header">All Stored Text</h3>
-        <textarea id="allStoredText" readonly placeholder="All stored text will appear here..."></textarea>
+        <textarea id="jsonInput" placeholder='{"CompanyName": [{"first_name": "John", "last_name": "Doe"}, {"first_name": "Jane", "last_name": "Smith"}]}'></textarea>
         <div class="button-group">
-            <button class="download-btn" id="downloadBtn">Download All Text</button>
-            <button class="clear-btn" id="clearBtn">Clear All Text</button>
+            <button class="format-btn" id="formatBtn">Format JSON</button>
+            <button class="add-btn" id="addJsonBtn">Add Company Data</button>
+        </div>
+        
+        <!-- All Stored JSON Data Section -->
+        <h2>All Stored Company Data</h2>
+        <textarea id="allStoredJson" readonly placeholder="All stored JSON data will appear here..."></textarea>
+        <div class="button-group">
+            <button class="download-btn" id="downloadBtn">Download JSON</button>
+            <button class="clear-btn" id="clearBtn">Clear All Data</button>
         </div>
         
         <div id="statusMsg" class="status"></div>
     </div>
     <div class="footer">
-        <p>Text is stored in a Firebase database and concatenated with each addition.</p>
+        <p>JSON data is stored in a Firebase database and combined into a single JSON array.</p>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Firebase (replace with your own Firebase project config)
-                  const firebaseConfig = {
-                
-                  apiKey: "AIzaSyBnA0VchettkJYHaaxPZyd_nSxGCbk3mm4",
-                
-                  authDomain: "my-db-c798e.firebaseapp.com",
-                
-                  projectId: "my-db-c798e",
-                
-                  storageBucket: "my-db-c798e.firebasestorage.app",
-                
-                  messagingSenderId: "751926716658",
-                
-                  appId: "1:751926716658:web:5d6839b66d9ca6cf16886b",
-                
-                  measurementId: "G-1S6C35P06B"
-                
-                };
+                        const firebaseConfig = {
+            
+              apiKey: "AIzaSyBnA0VchettkJYHaaxPZyd_nSxGCbk3mm4",
+            
+              authDomain: "my-db-c798e.firebaseapp.com",
+            
+              projectId: "my-db-c798e",
+            
+              storageBucket: "my-db-c798e.firebasestorage.app",
+            
+              messagingSenderId: "751926716658",
+            
+              appId: "1:751926716658:web:5d6839b66d9ca6cf16886b",
+            
+              measurementId: "G-1S6C35P06B"
+            
+            };
 
 
             
@@ -182,118 +205,149 @@
             firebase.initializeApp(firebaseConfig);
             const db = firebase.firestore();
             
-            // Document ID for storing all text (using a fixed ID makes it easier to manage)
-            const TEXT_STORAGE_DOC_ID = "all_text_storage";
+            // Document ID for storing all JSON data
+            const JSON_STORAGE_DOC_ID = "company_data_storage";
 
             // DOM Elements
-            const textArea = document.getElementById('textArea');
-            const allStoredText = document.getElementById('allStoredText');
-            const addTextBtn = document.getElementById('addTextBtn');
+            const jsonInput = document.getElementById('jsonInput');
+            const allStoredJson = document.getElementById('allStoredJson');
+            const formatBtn = document.getElementById('formatBtn');
+            const addJsonBtn = document.getElementById('addJsonBtn');
             const downloadBtn = document.getElementById('downloadBtn');
             const clearBtn = document.getElementById('clearBtn');
             const statusMsg = document.getElementById('statusMsg');
 
-            // Load all stored text on page load
-            loadAllStoredText();
+            // Load all stored JSON data on page load
+            loadAllStoredJson();
 
-            // Function to load all stored text
-            function loadAllStoredText() {
-                db.collection('texts').doc(TEXT_STORAGE_DOC_ID).get()
+            // Function to load all stored JSON data
+            function loadAllStoredJson() {
+                db.collection('texts').doc(JSON_STORAGE_DOC_ID).get()
                 .then((doc) => {
-                    if (doc.exists && doc.data().content) {
-                        allStoredText.value = doc.data().content;
+                    if (doc.exists && doc.data().companies) {
+                        const companiesData = doc.data().companies;
+                        displayJsonData(companiesData);
                     } else {
-                        allStoredText.value = "";
+                        allStoredJson.value = "{}";
                         // Create the document if it doesn't exist
-                        db.collection('texts').doc(TEXT_STORAGE_DOC_ID).set({
-                            content: "",
+                        db.collection('texts').doc(JSON_STORAGE_DOC_ID).set({
+                            companies: {},
                             updatedAt: new Date()
                         });
                     }
                 })
                 .catch((error) => {
-                    showStatus('Error loading text: ' + error.message, false);
+                    showStatus('Error loading data: ' + error.message, 'error');
                 });
             }
 
-            // Add text to storage (concatenate with existing text)
-            addTextBtn.addEventListener('click', function() {
-                const newText = textArea.value.trim();
-                
-                if (!newText) {
-                    showStatus('Please enter some text to add', false);
-                    return;
+            // Display JSON data in the textarea
+            function displayJsonData(data) {
+                try {
+                    allStoredJson.value = JSON.stringify(data, null, 2);
+                } catch (error) {
+                    showStatus('Error formatting JSON: ' + error.message, 'error');
                 }
-                
-                db.collection('texts').doc(TEXT_STORAGE_DOC_ID).get()
-                .then((doc) => {
-                    let existingText = "";
+            }
+
+            // Format JSON input
+            formatBtn.addEventListener('click', function() {
+                try {
+                    const jsonData = JSON.parse(jsonInput.value);
+                    jsonInput.value = JSON.stringify(jsonData, null, 2);
+                    showStatus('JSON formatted successfully!', 'success');
+                } catch (error) {
+                    showStatus('Invalid JSON: ' + error.message, 'error');
+                }
+            });
+
+            // Add JSON data to storage
+            addJsonBtn.addEventListener('click', function() {
+                try {
+                    // Parse input JSON to validate it
+                    const newData = JSON.parse(jsonInput.value);
                     
-                    if (doc.exists && doc.data().content) {
-                        existingText = doc.data().content;
+                    // Ensure it's in correct format (company name as key with array of employees)
+                    const companyName = Object.keys(newData)[0];
+                    
+                    if (!companyName || !Array.isArray(newData[companyName])) {
+                        showStatus('JSON format must be {"CompanyName": [array of employees]}', 'warning');
+                        return;
+                    }
+
+                    // Get current stored data
+                    db.collection('texts').doc(JSON_STORAGE_DOC_ID).get()
+                    .then((doc) => {
+                        let companies = {};
+                        
+                        if (doc.exists && doc.data().companies) {
+                            companies = doc.data().companies;
+                        }
+                        
+                        // Add or update company data
+                        companies[companyName] = newData[companyName];
+                        
+                        // Update the document with merged data
+                        return db.collection('texts').doc(JSON_STORAGE_DOC_ID).set({
+                            companies: companies,
+                            updatedAt: new Date()
+                        });
+                    })
+                    .then(() => {
+                        // Update the display
+                        loadAllStoredJson();
+                        showStatus('Company data added successfully!', 'success');
+                    })
+                    .catch((error) => {
+                        showStatus('Error adding data: ' + error.message, 'error');
+                    });
+                } catch (error) {
+                    showStatus('Invalid JSON: ' + error.message, 'error');
+                }
+            });
+
+            // Download all JSON data
+            downloadBtn.addEventListener('click', function() {
+                try {
+                    const jsonData = JSON.parse(allStoredJson.value);
+                    
+                    if (Object.keys(jsonData).length === 0) {
+                        showStatus('No data to download', 'warning');
+                        return;
                     }
                     
-                    // Add a line break if there's existing text
-                    const separator = existingText ? "\n\n" : "";
-                    
-                    // Concatenate existing text with new text
-                    const updatedText = existingText + separator + newText;
-                    
-                    // Update the document with concatenated text
-                    return db.collection('texts').doc(TEXT_STORAGE_DOC_ID).set({
-                        content: updatedText,
-                        updatedAt: new Date()
-                    });
-                })
-                .then(() => {
-                    // Update the display
-                    loadAllStoredText();
-                    // Clear the input area
-                    textArea.value = "";
-                    showStatus('Text added successfully!', true);
-                })
-                .catch((error) => {
-                    showStatus('Error adding text: ' + error.message, false);
-                });
-            });
-
-            // Download all text
-            downloadBtn.addEventListener('click', function() {
-                const text = allStoredText.value.trim();
-                
-                if (!text) {
-                    showStatus('No text to download', false);
-                    return;
+                    downloadJsonFile(jsonData);
+                } catch (error) {
+                    showStatus('Error preparing download: ' + error.message, 'error');
                 }
-                
-                downloadTextAsFile(text);
             });
 
-            // Clear all text (delete from database)
+            // Clear all JSON data
             clearBtn.addEventListener('click', function() {
-                if (confirm("Are you sure you want to clear all stored text? This cannot be undone.")) {
-                    db.collection('texts').doc(TEXT_STORAGE_DOC_ID).set({
-                        content: "",
+                if (confirm("Are you sure you want to clear all stored company data? This cannot be undone.")) {
+                    db.collection('texts').doc(JSON_STORAGE_DOC_ID).set({
+                        companies: {},
                         updatedAt: new Date()
                     })
                     .then(() => {
-                        allStoredText.value = "";
-                        showStatus('All text cleared!', true);
+                        allStoredJson.value = "{}";
+                        showStatus('All data cleared!', 'success');
                     })
                     .catch((error) => {
-                        showStatus('Error clearing text: ' + error.message, false);
+                        showStatus('Error clearing data: ' + error.message, 'error');
                     });
                 }
             });
 
-            // Helper function to download text as file
-            function downloadTextAsFile(text) {
-                const blob = new Blob([text], { type: 'text/plain' });
+            // Helper function to download JSON as file
+            function downloadJsonFile(data) {
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'all_text_' + getFormattedDate() + '.txt';
+                a.download = 'company_data_' + getFormattedDate() + '.json';
                 document.body.appendChild(a);
                 a.click();
                 
@@ -301,23 +355,29 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 
-                showStatus('Text downloaded successfully!', true);
+                showStatus('JSON downloaded successfully!', 'success');
             }
 
             // Show status message
-            function showStatus(message, isSuccess) {
+            function showStatus(message, type) {
                 statusMsg.textContent = message;
                 statusMsg.style.display = 'block';
                 
-                if (isSuccess) {
-                    statusMsg.className = 'status success';
-                } else {
-                    statusMsg.className = 'status error';
+                // Remove all classes
+                statusMsg.className = 'status';
+                
+                // Add specific class based on type
+                if (type === 'success') {
+                    statusMsg.classList.add('success');
+                } else if (type === 'error') {
+                    statusMsg.classList.add('error');
+                } else if (type === 'warning') {
+                    statusMsg.classList.add('warning');
                 }
                 
                 setTimeout(function() {
                     statusMsg.style.display = 'none';
-                }, 3000);
+                }, 4000);
             }
 
             // Get formatted date for filename
