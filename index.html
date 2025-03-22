@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Storage with Database</title>
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .clear-btn {
+            background-color: #e74c3c;
+        }
+        .clear-btn:hover {
+            background-color: #c0392b;
+        }
+        .save-btn {
+            background-color: #2ecc71;
+        }
+        .save-btn:hover {
+            background-color: #27ae60;
+        }
+        .copy-btn {
+            background-color: #9b59b6;
+        }
+        .copy-btn:hover {
+            background-color: #8e44ad;
+        }
+        input[type="text"] {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .id-area {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @media (max-width: 600px) {
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Storage with Database</h1>
+        
+        <div class="tab-container">
+            <div class="tab active" data-tab="save">Save Text</div>
+            <div class="tab" data-tab="retrieve">Retrieve Text</div>
+        </div>
+        
+        <div id="saveTab" class="tab-content active">
+            <p>Enter your text below and save it to our database.</p>
+            <textarea id="textArea" placeholder="Type or paste your text here..."></textarea>
+            <div class="button-group">
+                <button class="save-btn" id="saveToDbBtn">Save to Database</button>
+                <button class="copy-btn" id="copyBtn">Copy to Clipboard</button>
+                <button class="save-btn" id="downloadBtn">Download as File</button>
+                <button class="clear-btn" id="clearBtn">Clear Text</button>
+            </div>
+            <div id="savedTextId" class="id-area" style="display: none;">
+                <p>Your text has been saved! Use this ID to retrieve it later:</p>
+                <p><strong id="textId"></strong></p>
+                <button id="copyIdBtn">Copy ID</button>
+                <p><small>Please save this ID! You'll need it to retrieve your text.</small></p>
+            </div>
+        </div>
+        
+        <div id="retrieveTab" class="tab-content">
+            <p>Enter the ID to retrieve your saved text.</p>
+            <input type="text" id="retrieveId" placeholder="Enter text ID...">
+            <div class="button-group">
+                <button id="retrieveBtn">Retrieve Text</button>
+            </div>
+            <textarea id="retrievedText" placeholder="Your retrieved text will appear here..." readonly></textarea>
+            <div class="button-group">
+                <button class="copy-btn" id="copyRetrievedBtn">Copy to Clipboard</button>
+                <button class="save-btn" id="downloadRetrievedBtn">Download as File</button>
+            </div>
+        </div>
+        
+        <div id="statusMsg" class="status"></div>
+    </div>
+    <div class="footer">
+        <p>Text is stored in a Firebase database. IDs are randomly generated.</p>
+        <p><small>Data is stored for 30 days of inactivity by default.</small></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Firebase (replace with your own Firebase project config)
+             const firebaseConfig = {
+            
+              apiKey: "AIzaSyBnA0VchettkJYHaaxPZyd_nSxGCbk3mm4",
+            
+              authDomain: "my-db-c798e.firebaseapp.com",
+            
+              projectId: "my-db-c798e",
+            
+              storageBucket: "my-db-c798e.firebasestorage.app",
+            
+              messagingSenderId: "751926716658",
+            
+              appId: "1:751926716658:web:5d6839b66d9ca6cf16886b",
+            
+              measurementId: "G-1S6C35P06B"
+            
+            };
+            
+            // Initialize Firebase - you'll need to replace the config above with your own
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+
+            // DOM Elements
+            const textArea = document.getElementById('textArea');
+            const retrievedText = document.getElementById('retrievedText');
+            const retrieveId = document.getElementById('retrieveId');
+            const saveToDbBtn = document.getElementById('saveToDbBtn');
+            const retrieveBtn = document.getElementById('retrieveBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const copyRetrievedBtn = document.getElementById('copyRetrievedBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const downloadRetrievedBtn = document.getElementById('downloadRetrievedBtn');
+            const statusMsg = document.getElementById('statusMsg');
+            const savedTextId = document.getElementById('savedTextId');
+            const textIdElement = document.getElementById('textId');
+            const copyIdBtn = document.getElementById('copyIdBtn');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            // Tab Functionality
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Toggle active class on tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Toggle active class on tab contents
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    if (tabId === 'save') {
+                        document.getElementById('saveTab').classList.add('active');
+                    } else {
+                        document.getElementById('retrieveTab').classList.add('active');
+                    }
+                });
+            });
+
+            // Generate random ID for text storage
+            function generateId(length = 8) {
+                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < length; i++) {
+                    result += characters.charAt(Math.floor(Math.random() * characters.length));
+                }
+                return result;
+            }
+
+            // Save text to Firestore
+            saveToDbBtn.addEventListener('click', function() {
+                const text = textArea.value.trim();
+                
+                if (!text) {
+                    showStatus('Please enter some text first', false);
+                    return;
+                }
+                
+                const id = generateId();
+                const timestamp = new Date();
+                
+                db.collection('texts').doc(id).set({
+                    content: text,
+                    createdAt: timestamp
+                })
+                .then(() => {
+                    textIdElement.textContent = id;
+                    savedTextId.style.display = 'block';
+                    showStatus('Text saved successfully!', true);
+                })
+                .catch((error) => {
+                    showStatus('Error saving text: ' + error.message, false);
+                });
+            });
+
+            // Retrieve text from Firestore
+            retrieveBtn.addEventListener('click', function() {
+                const id = retrieveId.value.trim();
+                
+                if (!id) {
+                    showStatus('Please enter an ID', false);
+                    return;
+                }
+                
+                db.collection('texts').doc(id).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        retrievedText.value = doc.data().content;
+                        showStatus('Text retrieved successfully!', true);
+                    } else {
+                        showStatus('No text found with that ID', false);
+                    }
+                })
+                .catch((error) => {
+                    showStatus('Error retrieving text: ' + error.message, false);
+                });
+            });
+
+            // Copy text to clipboard
+            copyBtn.addEventListener('click', function() {
+                copyTextToClipboard(textArea);
+            });
+            
+            // Copy retrieved text to clipboard
+            copyRetrievedBtn.addEventListener('click', function() {
+                copyTextToClipboard(retrievedText);
+            });
+            
+            // Copy ID to clipboard
+            copyIdBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(textIdElement.textContent)
+                .then(() => {
+                    showStatus('ID copied to clipboard!', true);
+                })
+                .catch((error) => {
+                    showStatus('Error copying ID: ' + error, false);
+                });
+            });
+
+            // Clear text
+            clearBtn.addEventListener('click', function() {
+                textArea.value = '';
+                savedTextId.style.display = 'none';
+                showStatus('Text cleared!', true);
+            });
+
+            // Download text as file
+            downloadBtn.addEventListener('click', function() {
+                downloadTextAsFile(textArea.value);
+            });
+            
+            // Download retrieved text as file
+            downloadRetrievedBtn.addEventListener('click', function() {
+                downloadTextAsFile(retrievedText.value);
+            });
+
+            // Helper function to copy text to clipboard
+            function copyTextToClipboard(element) {
+                if (!element.value.trim()) {
+                    showStatus('No text to copy', false);
+                    return;
+                }
+
+                element.select();
+                navigator.clipboard.writeText(element.value)
+                .then(() => {
+                    showStatus('Text copied to clipboard!', true);
+                })
+                .catch((error) => {
+                    document.execCommand('copy'); // Fallback for older browsers
+                    showStatus('Text copied to clipboard!', true);
+                });
+            }
+
+            // Helper function to download text as file
+            function downloadTextAsFile(text) {
+                if (!text.trim()) {
+                    showStatus('No text to download', false);
+                    return;
+                }
+
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'text_' + getFormattedDate() + '.txt';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showStatus('Text downloaded successfully!', true);
+            }
+
+            // Show status message
+            function showStatus(message, isSuccess) {
+                statusMsg.textContent = message;
+                statusMsg.style.display = 'block';
+                
+                if (isSuccess) {
+                    statusMsg.className = 'status success';
+                } else {
+                    statusMsg.className = 'status error';
+                }
+                
+                setTimeout(function() {
+                    statusMsg.style.display = 'none';
+                }, 3000);
+            }
+
+            // Get formatted date for filename
+            function getFormattedDate() {
+                const date = new Date();
+                return date.getFullYear() + '-' + 
+                       padZero(date.getMonth() + 1) + '-' + 
+                       padZero(date.getDate()) + '_' + 
+                       padZero(date.getHours()) + '-' + 
+                       padZero(date.getMinutes());
+            }
+
+            // Pad with zero for single digits
+            function padZero(num) {
+                return num.toString().padStart(2, '0');
+            }
+        });
+    </script>
+</body>
+</html>
