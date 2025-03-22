@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Storage with Database</title>
+    <title>Text Storage - Concatenation Mode</title>
     <!-- Firebase SDK -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
@@ -27,9 +27,13 @@
             color: #2c3e50;
             margin-bottom: 20px;
         }
+        .description {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #7f8c8d;
+        }
         textarea {
             width: 100%;
-            height: 300px;
             padding: 15px;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -38,11 +42,19 @@
             resize: vertical;
             box-sizing: border-box;
         }
+        #textArea {
+            height: 150px;
+        }
+        #allStoredText {
+            height: 300px;
+            background-color: #f9f9f9;
+        }
         .button-group {
             display: flex;
             gap: 10px;
             justify-content: center;
             flex-wrap: wrap;
+            margin-bottom: 20px;
         }
         button {
             background-color: #3498db;
@@ -57,32 +69,23 @@
         button:hover {
             background-color: #2980b9;
         }
+        .add-btn {
+            background-color: #2ecc71;
+        }
+        .add-btn:hover {
+            background-color: #27ae60;
+        }
+        .download-btn {
+            background-color: #9b59b6;
+        }
+        .download-btn:hover {
+            background-color: #8e44ad;
+        }
         .clear-btn {
             background-color: #e74c3c;
         }
         .clear-btn:hover {
             background-color: #c0392b;
-        }
-        .save-btn {
-            background-color: #2ecc71;
-        }
-        .save-btn:hover {
-            background-color: #27ae60;
-        }
-        .copy-btn {
-            background-color: #9b59b6;
-        }
-        .copy-btn:hover {
-            background-color: #8e44ad;
-        }
-        input[type="text"] {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            width: 100%;
-            box-sizing: border-box;
-            margin-bottom: 15px;
         }
         .status {
             text-align: center;
@@ -99,42 +102,22 @@
             background-color: #f8d7da;
             color: #721c24;
         }
-        .id-area {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
         .footer {
             margin-top: 30px;
             text-align: center;
             font-size: 14px;
             color: #7f8c8d;
         }
-        .tab-container {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #ddd;
+        .section-header {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
         }
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            background-color: #f1f1f1;
-            border: 1px solid #ddd;
-            border-bottom: none;
-            border-radius: 5px 5px 0 0;
-            margin-right: 5px;
-        }
-        .tab.active {
-            background-color: white;
-            border-bottom: 1px solid white;
-            margin-bottom: -1px;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
+        .separator {
+            margin: 30px 0;
+            border-top: 1px dashed #ddd;
         }
         @media (max-width: 600px) {
             .button-group {
@@ -145,241 +128,172 @@
 </head>
 <body>
     <div class="container">
-        <h1>Text Storage with Database</h1>
+        <h1>Text Storage</h1>
+        <p class="description">Add text to be stored. New text will be concatenated with previously stored text.</p>
         
-        <div class="tab-container">
-            <div class="tab active" data-tab="save">Save Text</div>
-            <div class="tab" data-tab="retrieve">Retrieve Text</div>
-        </div>
-        
-        <div id="saveTab" class="tab-content active">
-            <p>Enter your text below and save it to our database.</p>
-            <textarea id="textArea" placeholder="Type or paste your text here..."></textarea>
+        <!-- Add New Text Section -->
+        <div>
+            <textarea id="textArea" placeholder="Type or paste new text here..."></textarea>
             <div class="button-group">
-                <button class="save-btn" id="saveToDbBtn">Save to Database</button>
-                <button class="copy-btn" id="copyBtn">Copy to Clipboard</button>
-                <button class="save-btn" id="downloadBtn">Download as File</button>
-                <button class="clear-btn" id="clearBtn">Clear Text</button>
-            </div>
-            <div id="savedTextId" class="id-area" style="display: none;">
-                <p>Your text has been saved! Use this ID to retrieve it later:</p>
-                <p><strong id="textId"></strong></p>
-                <button id="copyIdBtn">Copy ID</button>
-                <p><small>Please save this ID! You'll need it to retrieve your text.</small></p>
+                <button class="add-btn" id="addTextBtn">Add Text</button>
             </div>
         </div>
         
-        <div id="retrieveTab" class="tab-content">
-            <p>Enter the ID to retrieve your saved text.</p>
-            <input type="text" id="retrieveId" placeholder="Enter text ID...">
-            <div class="button-group">
-                <button id="retrieveBtn">Retrieve Text</button>
-            </div>
-            <textarea id="retrievedText" placeholder="Your retrieved text will appear here..." readonly></textarea>
-            <div class="button-group">
-                <button class="copy-btn" id="copyRetrievedBtn">Copy to Clipboard</button>
-                <button class="save-btn" id="downloadRetrievedBtn">Download as File</button>
-            </div>
+        <div class="separator"></div>
+        
+        <!-- All Stored Text Section -->
+        <h3 class="section-header">All Stored Text</h3>
+        <textarea id="allStoredText" readonly placeholder="All stored text will appear here..."></textarea>
+        <div class="button-group">
+            <button class="download-btn" id="downloadBtn">Download All Text</button>
+            <button class="clear-btn" id="clearBtn">Clear All Text</button>
         </div>
         
         <div id="statusMsg" class="status"></div>
     </div>
     <div class="footer">
-        <p>Text is stored in a Firebase database. IDs are randomly generated.</p>
-        <p><small>Data is stored for 30 days of inactivity by default.</small></p>
+        <p>Text is stored in a Firebase database and concatenated with each addition.</p>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Firebase (replace with your own Firebase project config)
-             const firebaseConfig = {
-            
-              apiKey: "AIzaSyBnA0VchettkJYHaaxPZyd_nSxGCbk3mm4",
-            
-              authDomain: "my-db-c798e.firebaseapp.com",
-            
-              projectId: "my-db-c798e",
-            
-              storageBucket: "my-db-c798e.firebasestorage.app",
-            
-              messagingSenderId: "751926716658",
-            
-              appId: "1:751926716658:web:5d6839b66d9ca6cf16886b",
-            
-              measurementId: "G-1S6C35P06B"
-            
-            };
+                  const firebaseConfig = {
+                
+                  apiKey: "AIzaSyBnA0VchettkJYHaaxPZyd_nSxGCbk3mm4",
+                
+                  authDomain: "my-db-c798e.firebaseapp.com",
+                
+                  projectId: "my-db-c798e",
+                
+                  storageBucket: "my-db-c798e.firebasestorage.app",
+                
+                  messagingSenderId: "751926716658",
+                
+                  appId: "1:751926716658:web:5d6839b66d9ca6cf16886b",
+                
+                  measurementId: "G-1S6C35P06B"
+                
+                };
+
+
             
             // Initialize Firebase - you'll need to replace the config above with your own
             firebase.initializeApp(firebaseConfig);
             const db = firebase.firestore();
+            
+            // Document ID for storing all text (using a fixed ID makes it easier to manage)
+            const TEXT_STORAGE_DOC_ID = "all_text_storage";
 
             // DOM Elements
             const textArea = document.getElementById('textArea');
-            const retrievedText = document.getElementById('retrievedText');
-            const retrieveId = document.getElementById('retrieveId');
-            const saveToDbBtn = document.getElementById('saveToDbBtn');
-            const retrieveBtn = document.getElementById('retrieveBtn');
-            const copyBtn = document.getElementById('copyBtn');
-            const copyRetrievedBtn = document.getElementById('copyRetrievedBtn');
-            const clearBtn = document.getElementById('clearBtn');
+            const allStoredText = document.getElementById('allStoredText');
+            const addTextBtn = document.getElementById('addTextBtn');
             const downloadBtn = document.getElementById('downloadBtn');
-            const downloadRetrievedBtn = document.getElementById('downloadRetrievedBtn');
+            const clearBtn = document.getElementById('clearBtn');
             const statusMsg = document.getElementById('statusMsg');
-            const savedTextId = document.getElementById('savedTextId');
-            const textIdElement = document.getElementById('textId');
-            const copyIdBtn = document.getElementById('copyIdBtn');
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
 
-            // Tab Functionality
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    
-                    // Toggle active class on tabs
-                    tabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Toggle active class on tab contents
-                    tabContents.forEach(content => content.classList.remove('active'));
-                    
-                    if (tabId === 'save') {
-                        document.getElementById('saveTab').classList.add('active');
+            // Load all stored text on page load
+            loadAllStoredText();
+
+            // Function to load all stored text
+            function loadAllStoredText() {
+                db.collection('texts').doc(TEXT_STORAGE_DOC_ID).get()
+                .then((doc) => {
+                    if (doc.exists && doc.data().content) {
+                        allStoredText.value = doc.data().content;
                     } else {
-                        document.getElementById('retrieveTab').classList.add('active');
+                        allStoredText.value = "";
+                        // Create the document if it doesn't exist
+                        db.collection('texts').doc(TEXT_STORAGE_DOC_ID).set({
+                            content: "",
+                            updatedAt: new Date()
+                        });
                     }
+                })
+                .catch((error) => {
+                    showStatus('Error loading text: ' + error.message, false);
+                });
+            }
+
+            // Add text to storage (concatenate with existing text)
+            addTextBtn.addEventListener('click', function() {
+                const newText = textArea.value.trim();
+                
+                if (!newText) {
+                    showStatus('Please enter some text to add', false);
+                    return;
+                }
+                
+                db.collection('texts').doc(TEXT_STORAGE_DOC_ID).get()
+                .then((doc) => {
+                    let existingText = "";
+                    
+                    if (doc.exists && doc.data().content) {
+                        existingText = doc.data().content;
+                    }
+                    
+                    // Add a line break if there's existing text
+                    const separator = existingText ? "\n\n" : "";
+                    
+                    // Concatenate existing text with new text
+                    const updatedText = existingText + separator + newText;
+                    
+                    // Update the document with concatenated text
+                    return db.collection('texts').doc(TEXT_STORAGE_DOC_ID).set({
+                        content: updatedText,
+                        updatedAt: new Date()
+                    });
+                })
+                .then(() => {
+                    // Update the display
+                    loadAllStoredText();
+                    // Clear the input area
+                    textArea.value = "";
+                    showStatus('Text added successfully!', true);
+                })
+                .catch((error) => {
+                    showStatus('Error adding text: ' + error.message, false);
                 });
             });
 
-            // Generate random ID for text storage
-            function generateId(length = 8) {
-                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                let result = '';
-                for (let i = 0; i < length; i++) {
-                    result += characters.charAt(Math.floor(Math.random() * characters.length));
-                }
-                return result;
-            }
-
-            // Save text to Firestore
-            saveToDbBtn.addEventListener('click', function() {
-                const text = textArea.value.trim();
+            // Download all text
+            downloadBtn.addEventListener('click', function() {
+                const text = allStoredText.value.trim();
                 
                 if (!text) {
-                    showStatus('Please enter some text first', false);
-                    return;
-                }
-                
-                const id = generateId();
-                const timestamp = new Date();
-                
-                db.collection('texts').doc(id).set({
-                    content: text,
-                    createdAt: timestamp
-                })
-                .then(() => {
-                    textIdElement.textContent = id;
-                    savedTextId.style.display = 'block';
-                    showStatus('Text saved successfully!', true);
-                })
-                .catch((error) => {
-                    showStatus('Error saving text: ' + error.message, false);
-                });
-            });
-
-            // Retrieve text from Firestore
-            retrieveBtn.addEventListener('click', function() {
-                const id = retrieveId.value.trim();
-                
-                if (!id) {
-                    showStatus('Please enter an ID', false);
-                    return;
-                }
-                
-                db.collection('texts').doc(id).get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        retrievedText.value = doc.data().content;
-                        showStatus('Text retrieved successfully!', true);
-                    } else {
-                        showStatus('No text found with that ID', false);
-                    }
-                })
-                .catch((error) => {
-                    showStatus('Error retrieving text: ' + error.message, false);
-                });
-            });
-
-            // Copy text to clipboard
-            copyBtn.addEventListener('click', function() {
-                copyTextToClipboard(textArea);
-            });
-            
-            // Copy retrieved text to clipboard
-            copyRetrievedBtn.addEventListener('click', function() {
-                copyTextToClipboard(retrievedText);
-            });
-            
-            // Copy ID to clipboard
-            copyIdBtn.addEventListener('click', function() {
-                navigator.clipboard.writeText(textIdElement.textContent)
-                .then(() => {
-                    showStatus('ID copied to clipboard!', true);
-                })
-                .catch((error) => {
-                    showStatus('Error copying ID: ' + error, false);
-                });
-            });
-
-            // Clear text
-            clearBtn.addEventListener('click', function() {
-                textArea.value = '';
-                savedTextId.style.display = 'none';
-                showStatus('Text cleared!', true);
-            });
-
-            // Download text as file
-            downloadBtn.addEventListener('click', function() {
-                downloadTextAsFile(textArea.value);
-            });
-            
-            // Download retrieved text as file
-            downloadRetrievedBtn.addEventListener('click', function() {
-                downloadTextAsFile(retrievedText.value);
-            });
-
-            // Helper function to copy text to clipboard
-            function copyTextToClipboard(element) {
-                if (!element.value.trim()) {
-                    showStatus('No text to copy', false);
-                    return;
-                }
-
-                element.select();
-                navigator.clipboard.writeText(element.value)
-                .then(() => {
-                    showStatus('Text copied to clipboard!', true);
-                })
-                .catch((error) => {
-                    document.execCommand('copy'); // Fallback for older browsers
-                    showStatus('Text copied to clipboard!', true);
-                });
-            }
-
-            // Helper function to download text as file
-            function downloadTextAsFile(text) {
-                if (!text.trim()) {
                     showStatus('No text to download', false);
                     return;
                 }
+                
+                downloadTextAsFile(text);
+            });
 
+            // Clear all text (delete from database)
+            clearBtn.addEventListener('click', function() {
+                if (confirm("Are you sure you want to clear all stored text? This cannot be undone.")) {
+                    db.collection('texts').doc(TEXT_STORAGE_DOC_ID).set({
+                        content: "",
+                        updatedAt: new Date()
+                    })
+                    .then(() => {
+                        allStoredText.value = "";
+                        showStatus('All text cleared!', true);
+                    })
+                    .catch((error) => {
+                        showStatus('Error clearing text: ' + error.message, false);
+                    });
+                }
+            });
+
+            // Helper function to download text as file
+            function downloadTextAsFile(text) {
                 const blob = new Blob([text], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'text_' + getFormattedDate() + '.txt';
+                a.download = 'all_text_' + getFormattedDate() + '.txt';
                 document.body.appendChild(a);
                 a.click();
                 
